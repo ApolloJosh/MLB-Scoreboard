@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Apollo MLB Scoreboard Overlay</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700&family=Barlow:wght@400;500&display=swap');
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html, body {
+    background: transparent;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+  }
+
+  :root {
+    --gold: #E8B43C;
+    --gold-dim: #b8882a;
+    --black: #0a0a0a;
+    --surface: rgba(10, 10, 10, 0.92);
+    --border: rgba(232, 180, 60, 0.25);
+    --text: #ffffff;
+    --muted: rgba(255,255,255,0.45);
+    --live-red: #e24b4a;
+    --win-green: #5dcaa5;
+    --font-display: 'Barlow Condensed', sans-serif;
+    --font-body: 'Barlow', sans-serif;
+  }
+
+  #overlay {
+    position: fixed;
+    bottom: 24px;
+    left: 24px;
+    right: 24px;
+    font-family: var(--font-body);
+    animation: slideUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+
+  @keyframes slideUp {
+    from { transform: translateY(20px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+  }
+
+  .bar {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 10px 16px;
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    overflow: hidden;
+  }
+
+  .brand {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-width: 64px;
+    border-right: 1px solid var(--border);
+    padding-right: 14px;
+    flex-shrink: 0;
+  }
+
+  .brand-logo {
+    font-family: var(--font-display);
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--gold);
+    letter-spacing: 0.04em;
+    line-height: 1;
+  }
+
+  .brand-sub {
+    font-family: var(--font-display);
+    font-size: 9px;
+    font-weight: 600;
+    color: var(--muted);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    margin-top: 2px;
+  }
+
+  .live-indicator {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-family: var(--font-display);
+    font-size: 10px;
+    font-weight: 600;
+    color: var(--live-red);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    flex-shrink: 0;
+    border-right: 1px solid var(--border);
+    padding-right: 14px;
+  }
+
+  .live-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--live-red);
+    animation: pulse 1.4s ease-in-out infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.4; transform: scale(0.8); }
+  }
+
+  .games-scroll {
+    display: flex;
+    gap: 10px;
+    overflow: hidden;
+    flex: 1;
+    align-items: center;
+  }
+
+  .game-pill {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(255,255,255,0.05);
+    border: 0.5px solid rgba(255,255,255,0.1);
+    border-radius: 7px;
+    padding: 6px 10px;
+    flex-shrink: 0;
+    transition: border-color 0.2s;
+  }
+
+  .game-pill.is-live {
+    border-color: rgba(226, 75, 74, 0.35);
+  }
+
+  .game-pill.is-astros {
+    border-color: var(--gold-dim);
+    background: rgba(232, 180, 60, 0.06);
+  }
+
+  .matchup {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .team-row {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+  }
+
+  .abbr {
+    font-family: var(--font-display);
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--text);
+    min-width: 32px;
+    letter-spacing: 0.02em;
+  }
+
+  .score {
+    font-family: var(--font-display);
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--text);
+    min-width: 18px;
+    text-align: right;
+  }
+
+  .score.win { color: var(--win-green); }
+
+  .game-meta {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-width: 34px;
+    border-left: 0.5px solid rgba(255,255,255,0.1);
+    padding-left: 8px;
+  }
+
+  .inning-label {
+    font-family: var(--font-display);
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--live-red);
+    letter-spacing: 0.04em;
+    line-height: 1;
+  }
+
+  .inning-label.final {
+    font-size: 10px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+
+  .inning-label.preview {
+    font-size: 10px;
+    color: var(--muted);
+    letter-spacing: 0.02em;
+  }
+
+  .refresh-stamp {
+    font-family: var(--font-body);
+    font-size: 9px;
+    color: rgba(255,255,255,0.2);
+    flex-shrink: 0;
+    white-space: nowrap;
+    margin-left: 4px;
+  }
+
+  .no-games {
+    font-family: var(--font-body);
+    font-size: 12px;
+    color: var(--muted);
+    padding: 4px 0;
+  }
+</style>
+</head>
+<body>
+<div id="overlay">
+  <div class="bar">
+    <div class="brand">
+      <div class="brand-logo">APOLLO</div>
+      <div class="brand-sub">MLB</div>
+    </div>
+    <div class="live-indicator">
+      <div class="live-dot"></div>
+      Scores
+    </div>
+    <div class="games-scroll" id="games"></div>
+    <div class="refresh-stamp" id="stamp"></div>
+  </div>
+</div>
+
+<script>
+const ASTROS_ID = 117;
+
+function getToday() {
+  const d = new Date();
+  return d.toISOString().split('T')[0];
+}
+
+function formatTime(iso) {
+  if (!iso) return 'TBD';
+  const d = new Date(iso);
+  return d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', timeZoneName: 'short' });
+}
+
+function renderGames(games) {
+  const container = document.getElementById('games');
+  if (!games.length) {
+    container.innerHTML = '<div class="no-games">No games scheduled today</div>';
+    return;
+  }
+
+  // Sort: live first, then scheduled, then final
+  const order = { 'Live': 0, 'Preview': 1, 'Final': 2 };
+  games.sort((a, b) => {
+    const sa = order[a.status?.abstractGameState] ?? 3;
+    const sb = order[b.status?.abstractGameState] ?? 3;
+    if (sa !== sb) return sa - sb;
+    // Astros first within each bucket
+    const aIsHou = a.teams?.away?.team?.id === ASTROS_ID || a.teams?.home?.team?.id === ASTROS_ID;
+    const bIsHou = b.teams?.away?.team?.id === ASTROS_ID || b.teams?.home?.team?.id === ASTROS_ID;
+    if (aIsHou && !bIsHou) return -1;
+    if (!aIsHou && bIsHou) return 1;
+    return 0;
+  });
+
+  container.innerHTML = games.map(g => {
+    const away = g.teams?.away;
+    const home = g.teams?.home;
+    const state = g.status?.abstractGameState || '';
+    const awayAbbr = away?.team?.abbreviation || '???';
+    const homeAbbr = home?.team?.abbreviation || '???';
+    const awayScore = away?.score;
+    const homeScore = home?.score;
+    const hasScore = typeof awayScore === 'number' && typeof homeScore === 'number';
+    const awayWin = hasScore && awayScore > homeScore;
+    const homeWin = hasScore && homeScore > awayScore;
+    const isAstros = away?.team?.id === ASTROS_ID || home?.team?.id === ASTROS_ID;
+
+    let metaHTML = '';
+    if (state === 'Live') {
+      const inn = g.linescore?.currentInning || '';
+      const half = g.linescore?.inningHalf || '';
+      const arrow = half === 'Top' ? '▲' : '▼';
+      metaHTML = `<div class="game-meta"><span class="inning-label">${arrow}${inn}</span></div>`;
+    } else if (state === 'Final') {
+      metaHTML = `<div class="game-meta"><span class="inning-label final">Final</span></div>`;
+    } else {
+      const t = formatTime(g.gameDate);
+      metaHTML = `<div class="game-meta"><span class="inning-label preview">${t}</span></div>`;
+    }
+
+    const pillClass = ['game-pill', state === 'Live' ? 'is-live' : '', isAstros ? 'is-astros' : ''].filter(Boolean).join(' ');
+
+    return `<div class="${pillClass}">
+      <div class="matchup">
+        <div class="team-row">
+          <span class="abbr">${awayAbbr}</span>
+          <span class="score ${state !== 'Preview' && awayWin ? 'win' : ''}">${hasScore ? awayScore : ''}</span>
+        </div>
+        <div class="team-row">
+          <span class="abbr">${homeAbbr}</span>
+          <span class="score ${state !== 'Preview' && homeWin ? 'win' : ''}">${hasScore ? homeScore : ''}</span>
+        </div>
+      </div>
+      ${metaHTML}
+    </div>`;
+  }).join('');
+}
+
+async function fetchScores() {
+  const today = getToday();
+  try {
+    const res = await fetch(`https://statsapi.mlb.com/api/v1/schedule?sportId=1&date=${today}&hydrate=linescore,team`);
+    const data = await res.json();
+    const games = data.dates?.[0]?.games || [];
+    renderGames(games);
+    const now = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    document.getElementById('stamp').textContent = `Updated ${now}`;
+  } catch (e) {
+    document.getElementById('games').innerHTML = '<div class="no-games">Score data unavailable</div>';
+  }
+}
+
+fetchScores();
+setInterval(fetchScores, 30000);
+</script>
+</body>
+</html>

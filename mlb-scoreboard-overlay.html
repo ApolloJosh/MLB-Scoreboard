@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>MLB Live Scoreboard — Apollo Media</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700&family=Barlow:wght@400;500&display=swap');
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --gold: #E8B43C;
+    --gold-dim: rgba(232,180,60,0.18);
+    --bg: rgba(10, 10, 10, 0.82);
+    --bg-card: rgba(255,255,255,0.055);
+    --bg-card-hover: rgba(255,255,255,0.09);
+    --border: rgba(255,255,255,0.09);
+    --border-gold: rgba(232,180,60,0.35);
+    --text: #f0f0f0;
+    --text-muted: #888;
+    --live: #e24b4a;
+    --win: #5dcaa5;
+    --font-display: 'Barlow Condensed', sans-serif;
+    --font-body: 'Barlow', sans-serif;
+  }
+
+  html, body {
+    background: transparent;
+    width: 100%;
+    min-height: 100vh;
+    display: flex;
+    align-items: flex-end;
+    justify-content: flex-start;
+    padding: 16px;
+    font-family: var(--font-body);
+  }
+
+  #scoreboard {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-top: 2px solid var(--gold);
+    border-radius: 0 0 10px 10px;
+    padding: 10px 14px 12px;
+    width: 100%;
+    max-width: 960px;
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+  }
+
+  .top-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 9px;
+  }
+
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .brand-logo {
+    font-family: var(--font-display);
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    color: var(--gold);
+    text-transform: uppercase;
+  }
+
+  .brand-divider {
+    width: 1px;
+    height: 12px;
+    background: var(--border);
+  }
+
+  .brand-label {
+    font-family: var(--font-display);
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.14em;
+    color: var(--text-muted);
+    text-transform: uppercase;
+  }
+
+  .meta {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .live-pill {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    background: rgba(226,75,74,0.15);
+    border: 1px solid rgba(226,75,74,0.3);
+    border-radius: 20px;
+    padding: 2px 8px;
+    font-family: var(--font-display);
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    color: var(--live);
+    text-transform: uppercase;
+  }
+
+  .live-dot {
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    background: var(--live);
+    animation: blink 1.4s ease-in-out infinite;
+  }
+
+  @keyframes blink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.2; }
+  }
+
+  .refresh-ts {
+    font-size: 10px;
+    color: var(--text-muted);
+    font-family: var(--font-body);
+  }
+
+  .games-row {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  .game-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 7px;
+    padding: 7px 11px 8px;
+    min-width: 155px;
+    flex: 1;
+    transition: background 0.2s;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .game-card.is-live {
+    border-color: var(--border-gold);
+    background: rgba(232,180,60,0.05);
+  }
+
+  .game-card.is-live::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+    background: var(--gold);
+    opacity: 0.7;
+  }
+
+  .game-status {
+    font-family: var(--font-display);
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin-bottom: 6px;
+  }
+
+  .game-status.live { color: var(--live); }
+  .game-status.pre { color: var(--gold); }
+
+  .team-line {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 2px 0;
+  }
+
+  .team-abbr {
+    font-family: var(--font-display);
+    font-size: 16px;
+    font-weight: 700;
+    letter-spacing: 0.03em;
+    color: var(--text);
+    flex: 1;
+  }
+
+  .team-record {
+    font-size: 10px;
+    color: var(--text-muted);
+    margin-left: 4px;
+    align-self: center;
+    font-family: var(--font-body);
+  }
+
+  .team-score {
+    font-family: var(--font-display);
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--text);
+    min-width: 26px;
+    text-align: right;
+  }
+
+  .team-score.win { color: var(--win); }
+  .team-score.scheduled { color: var(--text-muted); font-size: 14px; }
+
+  .sep {
+    height: 1px;
+    background: var(--border);
+    margin: 4px 0;
+  }
+
+  .game-detail {
+    font-size: 10px;
+    color: var(--text-muted);
+    margin-top: 5px;
+    font-family: var(--font-body);
+  }
+
+  .no-games {
+    color: var(--text-muted);
+    font-size: 13px;
+    padding: 6px 0;
+    font-family: var(--font-body);
+  }
+
+  .error-msg {
+    color: var(--live);
+    font-size: 12px;
+    padding: 6px 0;
+  }
+</style>
+</head>
+<body>
+
+<div id="scoreboard">
+  <div class="top-bar">
+    <div class="brand">
+      <span class="brand-logo">Apollo</span>
+      <div class="brand-divider"></div>
+      <span class="brand-label">MLB Scoreboard</span>
+    </div>
+    <div class="meta">
+      <div class="live-pill"><div class="live-dot"></div>Live</div>
+      <span class="refresh-ts" id="ts">Loading...</span>
+    </div>
+  </div>
+  <div class="games-row" id="games">
+    <div class="no-games">Fetching today's games...</div>
+  </div>
+</div>
+
+<script>
+async function load() {
+  const today = new Date().toISOString().split('T')[0];
+  try {
+    const res = await fetch(`https://statsapi.mlb.com/api/v1/schedule?sportId=1&date=${today}&hydrate=linescore,team`);
+    const data = await res.json();
+    const games = data.dates?.[0]?.games || [];
+    render(games);
+    document.getElementById('ts').textContent = 'Updated ' + new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  } catch (e) {
+    document.getElementById('games').innerHTML = '<div class="error-msg">Could not load scores. Retrying...</div>';
+  }
+}
+
+function fmt(g) {
+  const ab = g.status?.abstractGameState || '';
+  const detail = g.status?.detailedState || '';
+  const ls = g.linescore;
+  if (ab === 'Live') {
+    const half = ls?.inningHalf === 'Top' ? '▲' : '▼';
+    const inn = ls?.currentInning || '';
+    const outs = ls?.outs ?? '';
+    return { label: `${half}${inn}  ${outs} out${outs !== 1 ? 's' : ''}`, cls: 'live', isLive: true };
+  }
+  if (ab === 'Final') {
+    const inn = ls?.currentInning;
+    const extra = inn && inn > 9 ? ` (${inn})` : '';
+    return { label: `Final${extra}`, cls: 'final', isLive: false };
+  }
+  const t = g.gameDate ? new Date(g.gameDate).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }) : 'TBD';
+  return { label: t, cls: 'pre', isLive: false };
+}
+
+function detail(g) {
+  const ab = g.status?.abstractGameState;
+  const ls = g.linescore;
+  if (ab === 'Live' && ls) {
+    const b = ls.offense?.balls ?? 0;
+    const s = ls.offense?.strikes ?? 0;
+    return `${b}-${s} count`;
+  }
+  if (ab === 'Final' && ls) {
+    const ah = ls.teams?.away?.hits ?? '';
+    const hh = ls.teams?.home?.hits ?? '';
+    return `${ah} H / ${hh} H`;
+  }
+  return '';
+}
+
+function render(games) {
+  const el = document.getElementById('games');
+  if (!games.length) {
+    el.innerHTML = '<div class="no-games">No MLB games scheduled today</div>';
+    return;
+  }
+  el.innerHTML = games.map(g => {
+    const away = g.teams?.away;
+    const home = g.teams?.home;
+    const awayScore = away?.score;
+    const homeScore = home?.score;
+    const hasScore = awayScore !== undefined && awayScore !== null;
+    const { label, cls, isLive } = fmt(g);
+    const isFinal = g.status?.abstractGameState === 'Final';
+    const awayWin = isFinal && awayScore > homeScore;
+    const homeWin = isFinal && homeScore > awayScore;
+    const scoreDisplay = s => hasScore ? s : '<span class="team-score scheduled">-</span>';
+    const det = detail(g);
+
+    return `<div class="game-card${isLive ? ' is-live' : ''}">
+      <div class="game-status ${cls}">${label}</div>
+      <div class="team-line">
+        <span class="team-abbr">${away?.team?.abbreviation || '?'}</span>
+        ${hasScore
+          ? `<span class="team-score${awayWin ? ' win' : ''}">${awayScore}</span>`
+          : `<span class="team-score scheduled">-</span>`}
+      </div>
+      <div class="sep"></div>
+      <div class="team-line">
+        <span class="team-abbr">${home?.team?.abbreviation || '?'}</span>
+        ${hasScore
+          ? `<span class="team-score${homeWin ? ' win' : ''}">${homeScore}</span>`
+          : `<span class="team-score scheduled">-</span>`}
+      </div>
+      ${det ? `<div class="game-detail">${det}</div>` : ''}
+    </div>`;
+  }).join('');
+}
+
+load();
+setInterval(load, 30000);
+</script>
+</body>
+</html>
