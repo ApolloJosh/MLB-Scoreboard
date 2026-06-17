@@ -36,16 +36,24 @@
 
   #ticker-wrap {
     position: fixed;
-    bottom: 0;
     left: 0;
     width: 100%;
     height: var(--ticker-height);
     background: var(--surface);
-    border-top: 1px solid var(--border);
     overflow: hidden;
     z-index: 9999;
     display: flex;
     align-items: center;
+  }
+
+  #ticker-wrap.pos-top {
+    top: 0;
+    border-bottom: 1px solid var(--border);
+  }
+
+  #ticker-wrap.pos-bottom {
+    bottom: 0;
+    border-top: 1px solid var(--border);
   }
 
   /* Static Apollo badge on the left */
@@ -355,12 +363,10 @@
   /* Loading state */
   #loading {
     position: fixed;
-    bottom: 0;
     left: 0;
     width: 100%;
     height: var(--ticker-height);
     background: var(--surface);
-    border-top: 1px solid var(--border);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -370,6 +376,16 @@
     letter-spacing: 2px;
     color: var(--gold);
     text-transform: uppercase;
+  }
+
+  #loading.pos-top {
+    top: 0;
+    border-bottom: 1px solid var(--border);
+  }
+
+  #loading.pos-bottom {
+    bottom: 0;
+    border-top: 1px solid var(--border);
   }
 
   #loading .spinner {
@@ -405,9 +421,32 @@
 </div>
 
 <script>
+// âââ Embed URL Parameters âââââââââââââââââââââââââââââââââââââââ
+// Usage: apollo-mlb-ticker.html?position=top&height=72&speed=60&refreshInterval=5
+//   position       : "top" (default) or "bottom"
+//   height         : ticker height in px (default: 72)
+//   speed          : scroll speed in px/sec (default: 60)
+//   refreshInterval: data refresh in minutes (default: 5)
+// Example embed URL for Restream:
+//   https://apollojosh.github.io/MLB-Scoreboard/apollo-mlb-ticker.html?position=top&height=72&speed=60
+// âââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
+
+const PARAMS = new URLSearchParams(window.location.search);
+const POSITION = PARAMS.get('position') || 'top';
+const TICKER_HEIGHT = parseInt(PARAMS.get('height')) || 72;
+const REFRESH_MIN = parseInt(PARAMS.get('refreshInterval')) || 5;
+
 const ASTROS_ID = 117;
 const API_BASE = 'https://statsapi.mlb.com/api/v1';
-const SCROLL_SPEED_PX_PER_SEC = 60; // pixels per second
+const SCROLL_SPEED_PX_PER_SEC = parseInt(PARAMS.get('speed')) || 60;
+
+// Apply position and height from URL params
+(function applyParams() {
+  document.documentElement.style.setProperty('--ticker-height', TICKER_HEIGHT + 'px');
+  const posClass = 'pos-' + POSITION;
+  document.getElementById('loading').classList.add(posClass);
+  document.getElementById('ticker-wrap').classList.add(posClass);
+})();
 
 // Team abbreviation map
 const TEAM_ABBR = {
@@ -700,10 +739,10 @@ async function buildTicker() {
 // Initial load
 buildTicker();
 
-// Refresh data every 5 minutes
+// Refresh data on interval (default 5 min, configurable via ?refreshInterval=)
 setInterval(() => {
   buildTicker();
-}, 5 * 60 * 1000);
+}, REFRESH_MIN * 60 * 1000);
 </script>
 </body>
 </html>
