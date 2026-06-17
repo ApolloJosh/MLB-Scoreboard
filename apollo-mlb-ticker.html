@@ -1,0 +1,709 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Apollo MLB Ticker</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700&family=Barlow:wght@400;500&display=swap');
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html, body {
+    background: transparent;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+  }
+
+  :root {
+    --gold: #E8B43C;
+    --gold-dim: #b8882a;
+    --black: #0a0a0a;
+    --surface: rgba(10, 10, 10, 0.94);
+    --surface-solid: #0a0a0a;
+    --border: rgba(232, 180, 60, 0.25);
+    --text: #ffffff;
+    --muted: rgba(255,255,255,0.45);
+    --live-red: #e24b4a;
+    --win-green: #5dcaa5;
+    --loss-red: #e24b4a;
+    --astros-orange: #EB6E1F;
+    --font-display: 'Barlow Condensed', sans-serif;
+    --font-body: 'Barlow', sans-serif;
+    --ticker-height: 72px;
+  }
+
+  #ticker-wrap {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: var(--ticker-height);
+    background: var(--surface);
+    border-top: 1px solid var(--border);
+    overflow: hidden;
+    z-index: 9999;
+    display: flex;
+    align-items: center;
+  }
+
+  /* Static Apollo badge on the left */
+  #brand-badge {
+    position: absolute;
+    left: 0;
+    top: 0;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 0 18px;
+    background: linear-gradient(135deg, var(--surface-solid) 0%, rgba(10,10,10,0.98) 100%);
+    border-right: 1px solid var(--border);
+    z-index: 10;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+
+  #brand-badge .apollo-mark {
+    width: 28px;
+    height: 28px;
+    background: var(--gold);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: 16px;
+    color: var(--black);
+    flex-shrink: 0;
+  }
+
+  #brand-badge .brand-text {
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: 18px;
+    letter-spacing: 2px;
+    color: var(--gold);
+    text-transform: uppercase;
+  }
+
+  /* Scroll container */
+  #scroll-area {
+    margin-left: 160px; /* room for badge */
+    width: calc(100% - 160px);
+    height: 100%;
+    overflow: hidden;
+    position: relative;
+    /* fade edges */
+    -webkit-mask-image: linear-gradient(to right, transparent 0px, black 30px, black calc(100% - 30px), transparent 100%);
+    mask-image: linear-gradient(to right, transparent 0px, black 30px, black calc(100% - 30px), transparent 100%);
+  }
+
+  #scroll-track {
+    display: flex;
+    align-items: center;
+    height: 100%;
+    gap: 0;
+    white-space: nowrap;
+    will-change: transform;
+    animation: ticker-scroll var(--scroll-duration, 60s) linear infinite;
+  }
+
+  #scroll-track:hover {
+    animation-play-state: paused;
+  }
+
+  @keyframes ticker-scroll {
+    from { transform: translateX(0); }
+    to { transform: translateX(-50%); }
+  }
+
+  /* Section label */
+  .section-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 0 20px;
+    height: 100%;
+    flex-shrink: 0;
+  }
+
+  .section-label .label-text {
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: 13px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--gold);
+  }
+
+  .section-label .label-line {
+    width: 20px;
+    height: 1px;
+    background: var(--gold-dim);
+  }
+
+  /* Divider dot */
+  .divider {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 16px;
+    flex-shrink: 0;
+    height: 100%;
+  }
+
+  .divider .dot {
+    width: 4px;
+    height: 4px;
+    border-radius: 50%;
+    background: var(--gold-dim);
+  }
+
+  /* Game card (for scores) */
+  .game-card {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 16px;
+    margin: 0 4px;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 8px;
+    height: 52px;
+    flex-shrink: 0;
+    transition: background 0.2s;
+  }
+
+  .game-card:hover {
+    background: rgba(255,255,255,0.08);
+  }
+
+  .game-card.astros-game {
+    border-color: var(--border);
+    background: rgba(232, 180, 60, 0.06);
+  }
+
+  .game-card .team-col {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+  }
+
+  .game-card .team-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-family: var(--font-display);
+    font-weight: 600;
+    font-size: 14px;
+    color: var(--text);
+    line-height: 1.1;
+  }
+
+  .game-card .team-row.winner {
+    color: var(--text);
+  }
+
+  .game-card .team-row.loser {
+    color: var(--muted);
+  }
+
+  .game-card .team-abbr {
+    min-width: 30px;
+  }
+
+  .game-card .team-abbr.astros {
+    color: var(--astros-orange);
+    font-weight: 700;
+  }
+
+  .game-card .score {
+    min-width: 16px;
+    text-align: right;
+    font-weight: 700;
+  }
+
+  .game-card .game-status {
+    font-family: var(--font-body);
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--muted);
+    margin-left: 4px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+  }
+
+  .game-card .game-status .final-tag {
+    font-family: var(--font-display);
+    font-weight: 600;
+    font-size: 10px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: var(--muted);
+    background: rgba(255,255,255,0.06);
+    padding: 2px 6px;
+    border-radius: 3px;
+  }
+
+  .game-card .game-status .live-tag {
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: 10px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: var(--live-red);
+    background: rgba(226, 75, 74, 0.12);
+    padding: 2px 6px;
+    border-radius: 3px;
+    animation: live-pulse 2s ease-in-out infinite;
+  }
+
+  @keyframes live-pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.6; }
+  }
+
+  /* Record card (for last 10 / next 10) */
+  .record-card {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 14px;
+    margin: 0 4px;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 8px;
+    height: 46px;
+    flex-shrink: 0;
+    font-family: var(--font-display);
+    transition: background 0.2s;
+  }
+
+  .record-card:hover {
+    background: rgba(255,255,255,0.08);
+  }
+
+  .record-card .date-col {
+    font-size: 11px;
+    font-weight: 400;
+    color: var(--muted);
+    min-width: 42px;
+    text-align: center;
+  }
+
+  .record-card .matchup {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-weight: 600;
+    font-size: 14px;
+    color: var(--text);
+  }
+
+  .record-card .matchup .vs-at {
+    font-size: 11px;
+    font-weight: 400;
+    color: var(--muted);
+    padding: 0 2px;
+  }
+
+  .record-card .matchup .opp {
+    color: rgba(255,255,255,0.7);
+  }
+
+  .record-card .matchup .astros-abbr {
+    color: var(--astros-orange);
+    font-weight: 700;
+  }
+
+  .record-card .result-badge {
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    padding: 2px 8px;
+    border-radius: 4px;
+  }
+
+  .record-card .result-badge.win {
+    color: var(--win-green);
+    background: rgba(93, 202, 165, 0.12);
+  }
+
+  .record-card .result-badge.loss {
+    color: var(--loss-red);
+    background: rgba(226, 75, 74, 0.12);
+  }
+
+  .record-card .result-score {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--muted);
+  }
+
+  .record-card .time-col {
+    font-size: 12px;
+    font-weight: 500;
+    color: rgba(255,255,255,0.6);
+  }
+
+  /* Loading state */
+  #loading {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: var(--ticker-height);
+    background: var(--surface);
+    border-top: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10000;
+    font-family: var(--font-display);
+    font-size: 14px;
+    letter-spacing: 2px;
+    color: var(--gold);
+    text-transform: uppercase;
+  }
+
+  #loading .spinner {
+    width: 16px;
+    height: 16px;
+    border: 2px solid var(--gold-dim);
+    border-top-color: var(--gold);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    margin-right: 10px;
+  }
+
+  @keyframes spin {
+    to { transform: rotate(360deg); }
+  }
+</style>
+</head>
+<body>
+
+<div id="loading">
+  <div class="spinner"></div>
+  Loading scores...
+</div>
+
+<div id="ticker-wrap" style="display:none;">
+  <div id="brand-badge">
+    <div class="apollo-mark">A</div>
+    <span class="brand-text">Apollo</span>
+  </div>
+  <div id="scroll-area">
+    <div id="scroll-track"></div>
+  </div>
+</div>
+
+<script>
+const ASTROS_ID = 117;
+const API_BASE = 'https://statsapi.mlb.com/api/v1';
+const SCROLL_SPEED_PX_PER_SEC = 60; // pixels per second
+
+// Team abbreviation map
+const TEAM_ABBR = {
+  108:'LAA',109:'ARI',110:'BAL',111:'BOS',112:'CHC',113:'CIN',114:'CLE',
+  115:'COL',116:'DET',117:'HOU',118:'KC',119:'LAD',120:'WSH',121:'NYM',
+  133:'OAK',134:'PIT',135:'SD',136:'SEA',137:'SF',138:'STL',139:'TB',
+  140:'TEX',141:'TOR',142:'MIN',143:'PHI',144:'ATL',145:'CWS',146:'MIA',
+  147:'NYY',158:'MIL'
+};
+
+function getYesterday() {
+  const d = new Date();
+  d.setDate(d.getDate() - 1);
+  return d.toISOString().slice(0, 10);
+}
+
+function formatDate(dateStr) {
+  const d = new Date(dateStr + 'T12:00:00');
+  return (d.getMonth()+1) + '/' + d.getDate();
+}
+
+function formatTime(isoStr) {
+  const d = new Date(isoStr);
+  let h = d.getHours();
+  const m = d.getMinutes().toString().padStart(2, '0');
+  const ampm = h >= 12 ? 'PM' : 'AM';
+  h = h % 12 || 12;
+  return h + ':' + m + ' ' + ampm;
+}
+
+function isAstrosGame(game) {
+  return game.teams.away.team.id === ASTROS_ID || game.teams.home.team.id === ASTROS_ID;
+}
+
+function getAbbr(teamId) {
+  return TEAM_ABBR[teamId] || '???';
+}
+
+async function fetchYesterdayScores() {
+  const date = getYesterday();
+  const url = `${API_BASE}/schedule?sportId=1&date=${date}&hydrate=linescore,team`;
+  const resp = await fetch(url);
+  const data = await resp.json();
+  if (!data.dates || !data.dates.length) return [];
+  return data.dates[0].games || [];
+}
+
+async function fetchAstrosRange() {
+  // Fetch a wide range to capture last 10 completed + next 10 scheduled
+  const today = new Date();
+  const start = new Date(today);
+  start.setDate(start.getDate() - 30);
+  const end = new Date(today);
+  end.setDate(end.getDate() + 20);
+
+  const startStr = start.toISOString().slice(0, 10);
+  const endStr = end.toISOString().slice(0, 10);
+
+  const url = `${API_BASE}/schedule?sportId=1&teamId=${ASTROS_ID}&startDate=${startStr}&endDate=${endStr}&hydrate=linescore,team`;
+  const resp = await fetch(url);
+  const data = await resp.json();
+
+  const allGames = [];
+  if (data.dates) {
+    for (const d of data.dates) {
+      for (const g of d.games) {
+        allGames.push(g);
+      }
+    }
+  }
+
+  const completed = allGames.filter(g =>
+    g.status.abstractGameState === 'Final'
+  );
+  const scheduled = allGames.filter(g =>
+    g.status.abstractGameState === 'Preview' || g.status.abstractGameState === 'Pre-Game'
+  );
+
+  // Also include live games in the "last" section
+  const live = allGames.filter(g =>
+    g.status.abstractGameState === 'Live'
+  );
+
+  const last10 = completed.slice(-10);
+  const next10 = scheduled.slice(0, 10);
+
+  return { last10, next10, live };
+}
+
+function buildGameCard(game, highlightAstros = false) {
+  const away = game.teams.away;
+  const home = game.teams.home;
+  const awayId = away.team.id;
+  const homeId = home.team.id;
+  const linescore = game.linescore;
+
+  const awayRuns = linescore ? (linescore.teams.away.runs ?? 0) : 0;
+  const homeRuns = linescore ? (linescore.teams.home.runs ?? 0) : 0;
+
+  const isFinal = game.status.abstractGameState === 'Final';
+  const isLive = game.status.abstractGameState === 'Live';
+  const isAstros = isAstrosGame(game);
+
+  const awayWon = isFinal && awayRuns > homeRuns;
+  const homeWon = isFinal && homeRuns > awayRuns;
+
+  let statusHTML = '';
+  if (isFinal) {
+    const innings = linescore ? linescore.currentInning : 9;
+    statusHTML = `<span class="final-tag">F${innings > 9 ? '/' + innings : ''}</span>`;
+  } else if (isLive) {
+    const inning = linescore ? linescore.currentInningOrdinal : '';
+    const half = linescore ? (linescore.isTopInning ? 'Top' : 'Bot') : '';
+    statusHTML = `<span class="live-tag">LIVE</span><span style="font-size:10px;margin-top:1px;">${half} ${inning}</span>`;
+  }
+
+  const cardClass = (isAstros && highlightAstros) ? 'game-card astros-game' : 'game-card';
+
+  return `
+    <div class="${cardClass}">
+      <div class="team-col">
+        <div class="team-row ${awayWon ? 'winner' : (isFinal ? 'loser' : '')}">
+          <span class="team-abbr ${awayId === ASTROS_ID ? 'astros' : ''}">${getAbbr(awayId)}</span>
+          <span class="score">${awayRuns}</span>
+        </div>
+        <div class="team-row ${homeWon ? 'winner' : (isFinal ? 'loser' : '')}">
+          <span class="team-abbr ${homeId === ASTROS_ID ? 'astros' : ''}">${getAbbr(homeId)}</span>
+          <span class="score">${homeRuns}</span>
+        </div>
+      </div>
+      <div class="game-status">${statusHTML}</div>
+    </div>
+  `;
+}
+
+function buildRecordCard(game, type) {
+  const away = game.teams.away;
+  const home = game.teams.home;
+  const awayId = away.team.id;
+  const homeId = home.team.id;
+  const isHome = homeId === ASTROS_ID;
+  const oppId = isHome ? awayId : homeId;
+  const dateStr = game.officialDate || game.gameDate?.slice(0, 10) || '';
+
+  if (type === 'past') {
+    const linescore = game.linescore;
+    const awayRuns = linescore ? (linescore.teams.away.runs ?? 0) : 0;
+    const homeRuns = linescore ? (linescore.teams.home.runs ?? 0) : 0;
+    const astrosRuns = isHome ? homeRuns : awayRuns;
+    const oppRuns = isHome ? awayRuns : homeRuns;
+    const won = astrosRuns > oppRuns;
+
+    return `
+      <div class="record-card">
+        <div class="date-col">${formatDate(dateStr)}</div>
+        <div class="matchup">
+          <span class="astros-abbr">HOU</span>
+          <span class="vs-at">${isHome ? 'vs' : '@'}</span>
+          <span class="opp">${getAbbr(oppId)}</span>
+        </div>
+        <span class="result-badge ${won ? 'win' : 'loss'}">${won ? 'W' : 'L'}</span>
+        <span class="result-score">${astrosRuns}-${oppRuns}</span>
+      </div>
+    `;
+  } else {
+    // future game
+    const gameTime = game.gameDate ? formatTime(game.gameDate) : 'TBD';
+    return `
+      <div class="record-card">
+        <div class="date-col">${formatDate(dateStr)}</div>
+        <div class="matchup">
+          <span class="astros-abbr">HOU</span>
+          <span class="vs-at">${isHome ? 'vs' : '@'}</span>
+          <span class="opp">${getAbbr(oppId)}</span>
+        </div>
+        <span class="time-col">${gameTime}</span>
+      </div>
+    `;
+  }
+}
+
+function buildSectionLabel(text) {
+  return `
+    <div class="section-label">
+      <span class="label-line"></span>
+      <span class="label-text">${text}</span>
+      <span class="label-line"></span>
+    </div>
+  `;
+}
+
+function buildDivider() {
+  return '<div class="divider"><div class="dot"></div></div>';
+}
+
+async function buildTicker() {
+  try {
+    const [yesterdayGames, astrosData] = await Promise.all([
+      fetchYesterdayScores(),
+      fetchAstrosRange()
+    ]);
+
+    // Sort yesterday's games: Astros first, then by game time
+    const astrosYesterday = yesterdayGames.filter(g => isAstrosGame(g));
+    const otherYesterday = yesterdayGames.filter(g => !isAstrosGame(g));
+
+    let html = '';
+
+    // Section 1: Yesterday's Astros game
+    if (astrosYesterday.length > 0) {
+      html += buildSectionLabel("ASTROS YESTERDAY");
+      for (const g of astrosYesterday) {
+        html += buildGameCard(g, true);
+      }
+      html += buildDivider();
+    }
+
+    // Section 2: All yesterday's scores
+    html += buildSectionLabel("YESTERDAY'S SCORES");
+    if (yesterdayGames.length === 0) {
+      html += `<div class="record-card"><span class="time-col">No games yesterday</span></div>`;
+    } else {
+      for (const g of [...astrosYesterday, ...otherYesterday]) {
+        html += buildGameCard(g, true);
+      }
+    }
+    html += buildDivider();
+
+    // Section 3: Astros Last 10
+    html += buildSectionLabel("ASTROS LAST 10");
+    if (astrosData.last10.length === 0) {
+      html += `<div class="record-card"><span class="time-col">No recent games</span></div>`;
+    } else {
+      // Calculate record
+      let wins = 0, losses = 0;
+      for (const g of astrosData.last10) {
+        const ls = g.linescore;
+        if (!ls) continue;
+        const isHome = g.teams.home.team.id === ASTROS_ID;
+        const astrosR = isHome ? ls.teams.home.runs : ls.teams.away.runs;
+        const oppR = isHome ? ls.teams.away.runs : ls.teams.home.runs;
+        if (astrosR > oppR) wins++; else losses++;
+      }
+      // Show record summary
+      html += `
+        <div class="record-card" style="border-color:var(--border);background:rgba(232,180,60,0.06);">
+          <span class="astros-abbr" style="font-family:var(--font-display);font-weight:700;font-size:15px;color:var(--astros-orange);">HOU</span>
+          <span class="result-badge win" style="font-size:14px;">${wins}-${losses}</span>
+        </div>
+      `;
+      for (const g of astrosData.last10) {
+        html += buildRecordCard(g, 'past');
+      }
+    }
+    html += buildDivider();
+
+    // Section 4: Astros Next 10
+    html += buildSectionLabel("ASTROS UPCOMING");
+    if (astrosData.next10.length === 0) {
+      html += `<div class="record-card"><span class="time-col">No upcoming games</span></div>`;
+    } else {
+      for (const g of astrosData.next10) {
+        html += buildRecordCard(g, 'future');
+      }
+    }
+    html += buildDivider();
+
+    // Duplicate for seamless loop
+    const track = document.getElementById('scroll-track');
+    track.innerHTML = html + html;
+
+    // Calculate scroll duration based on content width
+    requestAnimationFrame(() => {
+      const halfWidth = track.scrollWidth / 2;
+      const duration = halfWidth / SCROLL_SPEED_PX_PER_SEC;
+      track.style.setProperty('--scroll-duration', duration + 's');
+      document.documentElement.style.setProperty('--scroll-duration', duration + 's');
+
+      // Show ticker, hide loading
+      document.getElementById('loading').style.display = 'none';
+      document.getElementById('ticker-wrap').style.display = 'flex';
+    });
+
+  } catch (err) {
+    console.error('Ticker error:', err);
+    document.getElementById('loading').innerHTML = '<span style="color:var(--live-red);">Error loading scores</span>';
+  }
+}
+
+// Initial load
+buildTicker();
+
+// Refresh data every 5 minutes
+setInterval(() => {
+  buildTicker();
+}, 5 * 60 * 1000);
+</script>
+</body>
+</html>
