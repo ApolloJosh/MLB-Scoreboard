@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Apollo MLB Ticker</title>
+<title>Apollo Astros Ticker</title>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700&family=Barlow:wght@400;500&display=swap');
 
@@ -29,9 +29,10 @@
     --win-green: #5dcaa5;
     --loss-red: #e24b4a;
     --astros-orange: #EB6E1F;
+    --astros-navy: #002D62;
     --font-display: 'Barlow Condensed', sans-serif;
     --font-body: 'Barlow', sans-serif;
-    --ticker-height: 72px;
+    --ticker-height: 88px;
   }
 
   #ticker-wrap {
@@ -56,7 +57,7 @@
     border-top: 1px solid var(--border);
   }
 
-  /* Static Apollo badge on the left */
+  /* Logo badge in the corner */
   #brand-badge {
     position: absolute;
     left: 0;
@@ -64,47 +65,42 @@
     height: 100%;
     display: flex;
     align-items: center;
-    gap: 8px;
-    padding: 0 18px;
+    justify-content: center;
+    padding: 0 14px;
     background: linear-gradient(135deg, var(--surface-solid) 0%, rgba(10,10,10,0.98) 100%);
     border-right: 1px solid var(--border);
     z-index: 10;
-    white-space: nowrap;
     flex-shrink: 0;
   }
 
-  #brand-badge .apollo-mark {
-    width: 28px;
-    height: 28px;
+  #brand-badge img {
+    height: 60px;
+    width: 60px;
+    object-fit: contain;
+  }
+
+  /* Fallback text badge if no image */
+  #brand-badge .fallback-mark {
+    display: none;
+    width: 50px;
+    height: 50px;
     background: var(--gold);
     border-radius: 50%;
-    display: flex;
     align-items: center;
     justify-content: center;
     font-family: var(--font-display);
     font-weight: 700;
-    font-size: 16px;
+    font-size: 24px;
     color: var(--black);
-    flex-shrink: 0;
-  }
-
-  #brand-badge .brand-text {
-    font-family: var(--font-display);
-    font-weight: 700;
-    font-size: 18px;
-    letter-spacing: 2px;
-    color: var(--gold);
-    text-transform: uppercase;
   }
 
   /* Scroll container */
   #scroll-area {
-    margin-left: 160px; /* room for badge */
-    width: calc(100% - 160px);
+    margin-left: 90px;
+    width: calc(100% - 90px);
     height: 100%;
     overflow: hidden;
     position: relative;
-    /* fade edges */
     -webkit-mask-image: linear-gradient(to right, transparent 0px, black 30px, black calc(100% - 30px), transparent 100%);
     mask-image: linear-gradient(to right, transparent 0px, black 30px, black calc(100% - 30px), transparent 100%);
   }
@@ -132,8 +128,8 @@
   .section-label {
     display: inline-flex;
     align-items: center;
-    gap: 6px;
-    padding: 0 20px;
+    gap: 8px;
+    padding: 0 22px;
     height: 100%;
     flex-shrink: 0;
   }
@@ -141,14 +137,14 @@
   .section-label .label-text {
     font-family: var(--font-display);
     font-weight: 700;
-    font-size: 13px;
+    font-size: 14px;
     letter-spacing: 2px;
     text-transform: uppercase;
     color: var(--gold);
   }
 
   .section-label .label-line {
-    width: 20px;
+    width: 22px;
     height: 1px;
     background: var(--gold-dim);
   }
@@ -158,7 +154,7 @@
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    padding: 0 16px;
+    padding: 0 18px;
     flex-shrink: 0;
     height: 100%;
   }
@@ -170,8 +166,226 @@
     background: var(--gold-dim);
   }
 
-  /* Game card (for scores) */
-  .game-card {
+  /* Info chip — general-purpose inline block */
+  .info-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 16px;
+    margin: 0 4px;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 8px;
+    height: 56px;
+    flex-shrink: 0;
+    font-family: var(--font-display);
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text);
+    transition: background 0.2s;
+  }
+
+  .info-chip:hover {
+    background: rgba(255,255,255,0.08);
+  }
+
+  .info-chip.highlight {
+    border-color: var(--border);
+    background: rgba(232, 180, 60, 0.06);
+  }
+
+  .info-chip .chip-label {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: var(--gold);
+    padding: 2px 7px;
+    background: rgba(232,180,60,0.12);
+    border-radius: 3px;
+  }
+
+  .info-chip .chip-value {
+    color: var(--text);
+    font-weight: 600;
+  }
+
+  .info-chip .chip-sub {
+    font-size: 13px;
+    font-weight: 400;
+    color: var(--muted);
+  }
+
+  .info-chip .astros-hl {
+    color: var(--astros-orange);
+    font-weight: 700;
+  }
+
+  /* Score card — larger, for featured game */
+  .score-card {
+    display: inline-flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 18px;
+    margin: 0 4px;
+    border: 1px solid var(--border);
+    background: rgba(232, 180, 60, 0.06);
+    border-radius: 8px;
+    height: 62px;
+    flex-shrink: 0;
+    transition: background 0.2s;
+  }
+
+  .score-card:hover {
+    background: rgba(232, 180, 60, 0.1);
+  }
+
+  .score-card .team-col {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+  }
+
+  .score-card .team-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-family: var(--font-display);
+    font-weight: 600;
+    font-size: 16px;
+    color: var(--text);
+    line-height: 1.1;
+  }
+
+  .score-card .team-row.winner { color: var(--text); }
+  .score-card .team-row.loser { color: var(--muted); }
+
+  .score-card .team-abbr { min-width: 34px; }
+
+  .score-card .team-abbr.astros {
+    color: var(--astros-orange);
+    font-weight: 700;
+  }
+
+  .score-card .score {
+    min-width: 18px;
+    text-align: right;
+    font-weight: 700;
+  }
+
+  .score-card .game-status {
+    font-family: var(--font-body);
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--muted);
+    margin-left: 4px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+  }
+
+  .score-card .final-tag {
+    font-family: var(--font-display);
+    font-weight: 600;
+    font-size: 11px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: var(--muted);
+    background: rgba(255,255,255,0.06);
+    padding: 2px 7px;
+    border-radius: 3px;
+  }
+
+  .score-card .live-tag {
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: 11px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: var(--live-red);
+    background: rgba(226, 75, 74, 0.12);
+    padding: 2px 7px;
+    border-radius: 3px;
+    animation: live-pulse 2s ease-in-out infinite;
+  }
+
+  @keyframes live-pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.6; }
+  }
+
+  /* Standings chip */
+  .standing-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 14px;
+    margin: 0 3px;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 8px;
+    height: 50px;
+    flex-shrink: 0;
+    font-family: var(--font-display);
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text);
+    transition: background 0.2s;
+  }
+
+  .standing-chip:hover { background: rgba(255,255,255,0.08); }
+
+  .standing-chip.is-astros {
+    border-color: var(--border);
+    background: rgba(232, 180, 60, 0.08);
+  }
+
+  .standing-chip .rank {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--gold);
+    min-width: 14px;
+  }
+
+  .standing-chip .team-name { min-width: 30px; }
+
+  .standing-chip .team-name.astros {
+    color: var(--astros-orange);
+    font-weight: 700;
+  }
+
+  .standing-chip .record {
+    font-size: 14px;
+    font-weight: 500;
+    color: rgba(255,255,255,0.6);
+  }
+
+  .standing-chip .gb {
+    font-size: 12px;
+    color: var(--muted);
+    font-weight: 400;
+  }
+
+  .standing-chip .streak-val {
+    font-size: 12px;
+    font-weight: 600;
+    padding: 2px 6px;
+    border-radius: 3px;
+  }
+
+  .standing-chip .streak-val.streak-w {
+    color: var(--win-green);
+    background: rgba(93, 202, 165, 0.12);
+  }
+
+  .standing-chip .streak-val.streak-l {
+    color: var(--loss-red);
+    background: rgba(226, 75, 74, 0.12);
+  }
+
+  /* Record card (for last 10) */
+  .record-card {
     display: inline-flex;
     align-items: center;
     gap: 10px;
@@ -182,123 +396,14 @@
     border-radius: 8px;
     height: 52px;
     flex-shrink: 0;
-    transition: background 0.2s;
-  }
-
-  .game-card:hover {
-    background: rgba(255,255,255,0.08);
-  }
-
-  .game-card.astros-game {
-    border-color: var(--border);
-    background: rgba(232, 180, 60, 0.06);
-  }
-
-  .game-card .team-col {
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-    min-width: 0;
-  }
-
-  .game-card .team-row {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    font-family: var(--font-display);
-    font-weight: 600;
-    font-size: 14px;
-    color: var(--text);
-    line-height: 1.1;
-  }
-
-  .game-card .team-row.winner {
-    color: var(--text);
-  }
-
-  .game-card .team-row.loser {
-    color: var(--muted);
-  }
-
-  .game-card .team-abbr {
-    min-width: 30px;
-  }
-
-  .game-card .team-abbr.astros {
-    color: var(--astros-orange);
-    font-weight: 700;
-  }
-
-  .game-card .score {
-    min-width: 16px;
-    text-align: right;
-    font-weight: 700;
-  }
-
-  .game-card .game-status {
-    font-family: var(--font-body);
-    font-size: 11px;
-    font-weight: 500;
-    color: var(--muted);
-    margin-left: 4px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 2px;
-  }
-
-  .game-card .game-status .final-tag {
-    font-family: var(--font-display);
-    font-weight: 600;
-    font-size: 10px;
-    letter-spacing: 1px;
-    text-transform: uppercase;
-    color: var(--muted);
-    background: rgba(255,255,255,0.06);
-    padding: 2px 6px;
-    border-radius: 3px;
-  }
-
-  .game-card .game-status .live-tag {
-    font-family: var(--font-display);
-    font-weight: 700;
-    font-size: 10px;
-    letter-spacing: 1px;
-    text-transform: uppercase;
-    color: var(--live-red);
-    background: rgba(226, 75, 74, 0.12);
-    padding: 2px 6px;
-    border-radius: 3px;
-    animation: live-pulse 2s ease-in-out infinite;
-  }
-
-  @keyframes live-pulse {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0.6; }
-  }
-
-  /* Record card (for last 10 / next 10) */
-  .record-card {
-    display: inline-flex;
-    align-items: center;
-    gap: 10px;
-    padding: 8px 14px;
-    margin: 0 4px;
-    background: rgba(255,255,255,0.04);
-    border: 1px solid rgba(255,255,255,0.06);
-    border-radius: 8px;
-    height: 46px;
-    flex-shrink: 0;
     font-family: var(--font-display);
     transition: background 0.2s;
   }
 
-  .record-card:hover {
-    background: rgba(255,255,255,0.08);
-  }
+  .record-card:hover { background: rgba(255,255,255,0.08); }
 
   .record-card .date-col {
-    font-size: 11px;
+    font-size: 12px;
     font-weight: 400;
     color: var(--muted);
     min-width: 42px;
@@ -308,22 +413,20 @@
   .record-card .matchup {
     display: flex;
     align-items: center;
-    gap: 4px;
+    gap: 5px;
     font-weight: 600;
-    font-size: 14px;
+    font-size: 15px;
     color: var(--text);
   }
 
   .record-card .matchup .vs-at {
-    font-size: 11px;
+    font-size: 12px;
     font-weight: 400;
     color: var(--muted);
     padding: 0 2px;
   }
 
-  .record-card .matchup .opp {
-    color: rgba(255,255,255,0.7);
-  }
+  .record-card .matchup .opp { color: rgba(255,255,255,0.7); }
 
   .record-card .matchup .astros-abbr {
     color: var(--astros-orange);
@@ -331,7 +434,7 @@
   }
 
   .record-card .result-badge {
-    font-size: 12px;
+    font-size: 13px;
     font-weight: 700;
     letter-spacing: 1px;
     padding: 2px 8px;
@@ -349,15 +452,9 @@
   }
 
   .record-card .result-score {
-    font-size: 13px;
+    font-size: 14px;
     font-weight: 600;
     color: var(--muted);
-  }
-
-  .record-card .time-col {
-    font-size: 12px;
-    font-weight: 500;
-    color: rgba(255,255,255,0.6);
   }
 
   /* Loading state */
@@ -372,48 +469,40 @@
     justify-content: center;
     z-index: 10000;
     font-family: var(--font-display);
-    font-size: 14px;
+    font-size: 15px;
     letter-spacing: 2px;
     color: var(--gold);
     text-transform: uppercase;
   }
 
-  #loading.pos-top {
-    top: 0;
-    border-bottom: 1px solid var(--border);
-  }
-
-  #loading.pos-bottom {
-    bottom: 0;
-    border-top: 1px solid var(--border);
-  }
+  #loading.pos-top { top: 0; border-bottom: 1px solid var(--border); }
+  #loading.pos-bottom { bottom: 0; border-top: 1px solid var(--border); }
 
   #loading .spinner {
-    width: 16px;
-    height: 16px;
+    width: 18px;
+    height: 18px;
     border: 2px solid var(--gold-dim);
     border-top-color: var(--gold);
     border-radius: 50%;
     animation: spin 0.8s linear infinite;
-    margin-right: 10px;
+    margin-right: 12px;
   }
 
-  @keyframes spin {
-    to { transform: rotate(360deg); }
-  }
+  @keyframes spin { to { transform: rotate(360deg); } }
 </style>
 </head>
 <body>
 
 <div id="loading">
   <div class="spinner"></div>
-  Loading scores...
+  Loading Astros data...
 </div>
 
 <div id="ticker-wrap" style="display:none;">
   <div id="brand-badge">
-    <div class="apollo-mark">A</div>
-    <span class="brand-text">Apollo</span>
+    <img id="logo-img" src="apollo-logo.png" alt=""
+         onerror="this.style.display='none'; document.getElementById('fallback-mark').style.display='flex';" />
+    <div id="fallback-mark" class="fallback-mark">A</div>
   </div>
   <div id="scroll-area">
     <div id="scroll-track"></div>
@@ -421,26 +510,24 @@
 </div>
 
 <script>
-// âââ Embed URL Parameters âââââââââââââââââââââââââââââââââââââââ
-// Usage: apollo-mlb-ticker.html?position=top&height=72&speed=60&refreshInterval=5
+// ─── Embed URL Parameters ───────────────────────────────────────
+// Usage: apollo-mlb-ticker.html?position=top&height=88&speed=55&refreshInterval=5
 //   position       : "top" (default) or "bottom"
-//   height         : ticker height in px (default: 72)
-//   speed          : scroll speed in px/sec (default: 60)
+//   height         : ticker height in px (default: 88)
+//   speed          : scroll speed in px/sec (default: 55)
 //   refreshInterval: data refresh in minutes (default: 5)
-// Example embed URL for Restream:
-//   https://apollojosh.github.io/MLB-Scoreboard/apollo-mlb-ticker.html?position=top&height=72&speed=60
-// âââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
+// ─────────────────────────────────────────────────────────────────
 
 const PARAMS = new URLSearchParams(window.location.search);
 const POSITION = PARAMS.get('position') || 'top';
-const TICKER_HEIGHT = parseInt(PARAMS.get('height')) || 72;
+const TICKER_HEIGHT = parseInt(PARAMS.get('height')) || 88;
 const REFRESH_MIN = parseInt(PARAMS.get('refreshInterval')) || 5;
+const SCROLL_SPEED_PX_PER_SEC = parseInt(PARAMS.get('speed')) || 55;
 
 const ASTROS_ID = 117;
+const AL_WEST_DIV = 200;
 const API_BASE = 'https://statsapi.mlb.com/api/v1';
-const SCROLL_SPEED_PX_PER_SEC = parseInt(PARAMS.get('speed')) || 60;
 
-// Apply position and height from URL params
 (function applyParams() {
   document.documentElement.style.setProperty('--ticker-height', TICKER_HEIGHT + 'px');
   const posClass = 'pos-' + POSITION;
@@ -448,7 +535,6 @@ const SCROLL_SPEED_PX_PER_SEC = parseInt(PARAMS.get('speed')) || 60;
   document.getElementById('ticker-wrap').classList.add(posClass);
 })();
 
-// Team abbreviation map
 const TEAM_ABBR = {
   108:'LAA',109:'ARI',110:'BAL',111:'BOS',112:'CHC',113:'CIN',114:'CLE',
   115:'COL',116:'DET',117:'HOU',118:'KC',119:'LAD',120:'WSH',121:'NYM',
@@ -457,260 +543,311 @@ const TEAM_ABBR = {
   147:'NYY',158:'MIL'
 };
 
-function getYesterday() {
-  const d = new Date();
-  d.setDate(d.getDate() - 1);
-  return d.toISOString().slice(0, 10);
-}
+function getAbbr(id) { return TEAM_ABBR[id] || '???'; }
 
-function formatDate(dateStr) {
-  const d = new Date(dateStr + 'T12:00:00');
+function formatDate(s) {
+  const d = new Date(s + 'T12:00:00');
   return (d.getMonth()+1) + '/' + d.getDate();
 }
 
-function formatTime(isoStr) {
-  const d = new Date(isoStr);
-  let h = d.getHours();
-  const m = d.getMinutes().toString().padStart(2, '0');
-  const ampm = h >= 12 ? 'PM' : 'AM';
-  h = h % 12 || 12;
-  return h + ':' + m + ' ' + ampm;
+function lastName(full) {
+  if (!full) return '?';
+  const parts = full.split(' ');
+  return parts[parts.length - 1];
 }
 
-function isAstrosGame(game) {
-  return game.teams.away.team.id === ASTROS_ID || game.teams.home.team.id === ASTROS_ID;
-}
+// ─── API fetchers ────────────────────────────────────────────────
 
-function getAbbr(teamId) {
-  return TEAM_ABBR[teamId] || '???';
-}
-
-async function fetchYesterdayScores() {
-  const date = getYesterday();
-  const url = `${API_BASE}/schedule?sportId=1&date=${date}&hydrate=linescore,team`;
-  const resp = await fetch(url);
-  const data = await resp.json();
-  if (!data.dates || !data.dates.length) return [];
-  return data.dates[0].games || [];
-}
-
-async function fetchAstrosRange() {
-  // Fetch a wide range to capture last 10 completed + next 10 scheduled
+async function fetchLatestAstrosGame() {
   const today = new Date();
   const start = new Date(today);
-  start.setDate(start.getDate() - 30);
-  const end = new Date(today);
-  end.setDate(end.getDate() + 20);
-
-  const startStr = start.toISOString().slice(0, 10);
-  const endStr = end.toISOString().slice(0, 10);
-
-  const url = `${API_BASE}/schedule?sportId=1&teamId=${ASTROS_ID}&startDate=${startStr}&endDate=${endStr}&hydrate=linescore,team`;
+  start.setDate(start.getDate() - 7);
+  const url = `${API_BASE}/schedule?sportId=1&teamId=${ASTROS_ID}&startDate=${start.toISOString().slice(0,10)}&endDate=${today.toISOString().slice(0,10)}&hydrate=linescore,team`;
   const resp = await fetch(url);
   const data = await resp.json();
 
   const allGames = [];
-  if (data.dates) {
-    for (const d of data.dates) {
-      for (const g of d.games) {
-        allGames.push(g);
-      }
-    }
-  }
+  if (data.dates) for (const d of data.dates) for (const g of d.games) allGames.push(g);
 
-  const completed = allGames.filter(g =>
-    g.status.abstractGameState === 'Final'
-  );
-  const scheduled = allGames.filter(g =>
-    g.status.abstractGameState === 'Preview' || g.status.abstractGameState === 'Pre-Game'
-  );
-
-  // Also include live games in the "last" section
-  const live = allGames.filter(g =>
-    g.status.abstractGameState === 'Live'
-  );
-
-  const last10 = completed.slice(-10);
-  const next10 = scheduled.slice(0, 10);
-
-  return { last10, next10, live };
+  const live = allGames.filter(g => g.status.abstractGameState === 'Live');
+  const final = allGames.filter(g => g.status.abstractGameState === 'Final');
+  if (live.length > 0) return live[live.length - 1];
+  if (final.length > 0) return final[final.length - 1];
+  return null;
 }
 
-function buildGameCard(game, highlightAstros = false) {
-  const away = game.teams.away;
-  const home = game.teams.home;
-  const awayId = away.team.id;
-  const homeId = home.team.id;
-  const linescore = game.linescore;
-
-  const awayRuns = linescore ? (linescore.teams.away.runs ?? 0) : 0;
-  const homeRuns = linescore ? (linescore.teams.home.runs ?? 0) : 0;
-
-  const isFinal = game.status.abstractGameState === 'Final';
-  const isLive = game.status.abstractGameState === 'Live';
-  const isAstros = isAstrosGame(game);
-
-  const awayWon = isFinal && awayRuns > homeRuns;
-  const homeWon = isFinal && homeRuns > awayRuns;
-
-  let statusHTML = '';
-  if (isFinal) {
-    const innings = linescore ? linescore.currentInning : 9;
-    statusHTML = `<span class="final-tag">F${innings > 9 ? '/' + innings : ''}</span>`;
-  } else if (isLive) {
-    const inning = linescore ? linescore.currentInningOrdinal : '';
-    const half = linescore ? (linescore.isTopInning ? 'Top' : 'Bot') : '';
-    statusHTML = `<span class="live-tag">LIVE</span><span style="font-size:10px;margin-top:1px;">${half} ${inning}</span>`;
-  }
-
-  const cardClass = (isAstros && highlightAstros) ? 'game-card astros-game' : 'game-card';
-
-  return `
-    <div class="${cardClass}">
-      <div class="team-col">
-        <div class="team-row ${awayWon ? 'winner' : (isFinal ? 'loser' : '')}">
-          <span class="team-abbr ${awayId === ASTROS_ID ? 'astros' : ''}">${getAbbr(awayId)}</span>
-          <span class="score">${awayRuns}</span>
-        </div>
-        <div class="team-row ${homeWon ? 'winner' : (isFinal ? 'loser' : '')}">
-          <span class="team-abbr ${homeId === ASTROS_ID ? 'astros' : ''}">${getAbbr(homeId)}</span>
-          <span class="score">${homeRuns}</span>
-        </div>
-      </div>
-      <div class="game-status">${statusHTML}</div>
-    </div>
-  `;
+async function fetchBoxscore(gamePk) {
+  const resp = await fetch(`${API_BASE}/game/${gamePk}/boxscore`);
+  return await resp.json();
 }
 
-function buildRecordCard(game, type) {
-  const away = game.teams.away;
-  const home = game.teams.home;
-  const awayId = away.team.id;
-  const homeId = home.team.id;
-  const isHome = homeId === ASTROS_ID;
-  const oppId = isHome ? awayId : homeId;
-  const dateStr = game.officialDate || game.gameDate?.slice(0, 10) || '';
-
-  if (type === 'past') {
-    const linescore = game.linescore;
-    const awayRuns = linescore ? (linescore.teams.away.runs ?? 0) : 0;
-    const homeRuns = linescore ? (linescore.teams.home.runs ?? 0) : 0;
-    const astrosRuns = isHome ? homeRuns : awayRuns;
-    const oppRuns = isHome ? awayRuns : homeRuns;
-    const won = astrosRuns > oppRuns;
-
-    return `
-      <div class="record-card">
-        <div class="date-col">${formatDate(dateStr)}</div>
-        <div class="matchup">
-          <span class="astros-abbr">HOU</span>
-          <span class="vs-at">${isHome ? 'vs' : '@'}</span>
-          <span class="opp">${getAbbr(oppId)}</span>
-        </div>
-        <span class="result-badge ${won ? 'win' : 'loss'}">${won ? 'W' : 'L'}</span>
-        <span class="result-score">${astrosRuns}-${oppRuns}</span>
-      </div>
-    `;
-  } else {
-    // future game
-    const gameTime = game.gameDate ? formatTime(game.gameDate) : 'TBD';
-    return `
-      <div class="record-card">
-        <div class="date-col">${formatDate(dateStr)}</div>
-        <div class="matchup">
-          <span class="astros-abbr">HOU</span>
-          <span class="vs-at">${isHome ? 'vs' : '@'}</span>
-          <span class="opp">${getAbbr(oppId)}</span>
-        </div>
-        <span class="time-col">${gameTime}</span>
-      </div>
-    `;
+async function fetchDivisionStandings() {
+  const year = new Date().getFullYear();
+  const url = `${API_BASE}/standings?leagueId=103&season=${year}&standingsTypes=regularSeason&hydrate=team`;
+  const resp = await fetch(url);
+  const data = await resp.json();
+  if (!data.records) return [];
+  for (const div of data.records) {
+    if (div.division && div.division.id === AL_WEST_DIV) return div.teamRecords || [];
   }
+  return [];
 }
+
+async function fetchWildCardStandings() {
+  const year = new Date().getFullYear();
+  const url = `${API_BASE}/standings?leagueId=103&season=${year}&standingsTypes=wildCard&hydrate=team`;
+  const resp = await fetch(url);
+  const data = await resp.json();
+  if (!data.records || !data.records.length) return [];
+  return data.records[0].teamRecords || [];
+}
+
+async function fetchLast10() {
+  const today = new Date();
+  const start = new Date(today);
+  start.setDate(start.getDate() - 30);
+  const url = `${API_BASE}/schedule?sportId=1&teamId=${ASTROS_ID}&startDate=${start.toISOString().slice(0,10)}&endDate=${today.toISOString().slice(0,10)}&hydrate=linescore,team`;
+  const resp = await fetch(url);
+  const data = await resp.json();
+
+  const allGames = [];
+  if (data.dates) for (const d of data.dates) for (const g of d.games) allGames.push(g);
+  return allGames.filter(g => g.status.abstractGameState === 'Final').slice(-10);
+}
+
+// ─── HTML builders ───────────────────────────────────────────────
 
 function buildSectionLabel(text) {
-  return `
-    <div class="section-label">
-      <span class="label-line"></span>
-      <span class="label-text">${text}</span>
-      <span class="label-line"></span>
-    </div>
-  `;
+  return `<div class="section-label">
+    <span class="label-line"></span>
+    <span class="label-text">${text}</span>
+    <span class="label-line"></span>
+  </div>`;
 }
 
 function buildDivider() {
   return '<div class="divider"><div class="dot"></div></div>';
 }
 
+function buildScoreCard(game) {
+  const awayId = game.teams.away.team.id;
+  const homeId = game.teams.home.team.id;
+  const ls = game.linescore;
+  const awayR = ls ? (ls.teams.away.runs ?? 0) : 0;
+  const homeR = ls ? (ls.teams.home.runs ?? 0) : 0;
+  const isFinal = game.status.abstractGameState === 'Final';
+  const isLive = game.status.abstractGameState === 'Live';
+  const awayWon = isFinal && awayR > homeR;
+  const homeWon = isFinal && homeR > awayR;
+
+  let statusHTML = '';
+  if (isFinal) {
+    const inn = ls ? ls.currentInning : 9;
+    statusHTML = `<span class="final-tag">F${inn > 9 ? '/' + inn : ''}</span>`;
+  } else if (isLive) {
+    const ord = ls ? ls.currentInningOrdinal : '';
+    const half = ls ? (ls.isTopInning ? 'Top' : 'Bot') : '';
+    statusHTML = `<span class="live-tag">LIVE</span><span style="font-size:11px;margin-top:1px;">${half} ${ord}</span>`;
+  }
+
+  return `<div class="score-card">
+    <div class="team-col">
+      <div class="team-row ${awayWon ? 'winner' : (isFinal ? 'loser' : '')}">
+        <span class="team-abbr ${awayId === ASTROS_ID ? 'astros' : ''}">${getAbbr(awayId)}</span>
+        <span class="score">${awayR}</span>
+      </div>
+      <div class="team-row ${homeWon ? 'winner' : (isFinal ? 'loser' : '')}">
+        <span class="team-abbr ${homeId === ASTROS_ID ? 'astros' : ''}">${getAbbr(homeId)}</span>
+        <span class="score">${homeR}</span>
+      </div>
+    </div>
+    <div class="game-status">${statusHTML}</div>
+  </div>`;
+}
+
+function buildGameDetails(game, boxscore) {
+  let html = '';
+  const dateStr = game.officialDate || game.gameDate?.slice(0, 10) || '';
+  if (dateStr) {
+    html += `<div class="info-chip highlight"><span class="chip-sub">${formatDate(dateStr)}</span></div>`;
+  }
+
+  html += buildScoreCard(game);
+
+  if (!boxscore || !boxscore.teams) return html;
+
+  const isHome = game.teams.home.team.id === ASTROS_ID;
+  const astrosSide = isHome ? boxscore.teams.home : boxscore.teams.away;
+  const oppSide = isHome ? boxscore.teams.away : boxscore.teams.home;
+  const allPlayers = { ...(astrosSide.players || {}), ...(oppSide.players || {}) };
+
+  let wp = null, lp = null, sv = null;
+  for (const [, p] of Object.entries(allPlayers)) {
+    if (!p.stats?.pitching?.note) continue;
+    const note = p.stats.pitching.note;
+    if (note.startsWith('(W,')) wp = p;
+    if (note.startsWith('(L,')) lp = p;
+    if (note.startsWith('(S,')) sv = p;
+  }
+
+  if (wp) html += `<div class="info-chip"><span class="chip-label">WP</span><span class="chip-value">${lastName(wp.person?.fullName)}</span><span class="chip-sub">${wp.stats.pitching.note||''}</span></div>`;
+  if (lp) html += `<div class="info-chip"><span class="chip-label">LP</span><span class="chip-value">${lastName(lp.person?.fullName)}</span><span class="chip-sub">${lp.stats.pitching.note||''}</span></div>`;
+  if (sv) html += `<div class="info-chip"><span class="chip-label">SV</span><span class="chip-value">${lastName(sv.person?.fullName)}</span><span class="chip-sub">${sv.stats.pitching.note||''}</span></div>`;
+
+  // Top Astros hitters
+  const batters = [];
+  for (const [, p] of Object.entries(astrosSide.players || {})) {
+    if (!p.stats?.batting) continue;
+    const b = p.stats.batting;
+    const ab = parseInt(b.atBats) || 0;
+    if (ab === 0) continue;
+    const hits = parseInt(b.hits) || 0;
+    const hr = parseInt(b.homeRuns) || 0;
+    const rbi = parseInt(b.rbi) || 0;
+    if (hits === 0 && hr === 0 && rbi === 0) continue;
+    batters.push({ name: p.person?.fullName, hits, hr, rbi, ab });
+  }
+  batters.sort((a, b) => (b.hr * 10 + b.rbi * 3 + b.hits) - (a.hr * 10 + a.rbi * 3 + a.hits));
+
+  for (const b of batters.slice(0, 3)) {
+    let stat = `${b.hits}-${b.ab}`;
+    if (b.hr > 0) stat += `, ${b.hr} HR`;
+    if (b.rbi > 0) stat += `, ${b.rbi} RBI`;
+    html += `<div class="info-chip"><span class="astros-hl" style="font-family:var(--font-display);font-size:14px;">${lastName(b.name)}</span><span class="chip-sub">${stat}</span></div>`;
+  }
+
+  return html;
+}
+
+function buildStandingsSection(standings, label) {
+  let html = '';
+  for (let i = 0; i < standings.length; i++) {
+    const t = standings[i];
+    const teamId = t.team?.id;
+    const isAstros = teamId === ASTROS_ID;
+    const w = t.wins || 0;
+    const l = t.losses || 0;
+    const gb = t.gamesBack === '-' ? '' : t.gamesBack;
+    const streak = t.streak?.streakCode || '';
+    const isWStreak = streak.startsWith('W');
+
+    let gbHtml = '';
+    if (label === 'div') {
+      gbHtml = i === 0
+        ? '<span class="gb" style="color:var(--gold);">1st</span>'
+        : `<span class="gb">${gb} GB</span>`;
+    } else {
+      // Wild card: top 3 are in, show WC rank
+      if (i < 3) {
+        gbHtml = `<span class="gb" style="color:var(--win-green);">WC${i+1}</span>`;
+      } else {
+        gbHtml = gb ? `<span class="gb">${gb} GB</span>` : `<span class="gb">--</span>`;
+      }
+    }
+
+    html += `<div class="standing-chip ${isAstros ? 'is-astros' : ''}">
+      <span class="rank">${i + 1}</span>
+      <span class="team-name ${isAstros ? 'astros' : ''}">${getAbbr(teamId)}</span>
+      <span class="record">${w}-${l}</span>
+      ${gbHtml}
+      ${streak ? `<span class="streak-val ${isWStreak ? 'streak-w' : 'streak-l'}">${streak}</span>` : ''}
+    </div>`;
+  }
+  return html;
+}
+
+function buildRecordCard(game) {
+  const awayId = game.teams.away.team.id;
+  const homeId = game.teams.home.team.id;
+  const isHome = homeId === ASTROS_ID;
+  const oppId = isHome ? awayId : homeId;
+  const dateStr = game.officialDate || game.gameDate?.slice(0, 10) || '';
+  const ls = game.linescore;
+  const awayR = ls ? (ls.teams.away.runs ?? 0) : 0;
+  const homeR = ls ? (ls.teams.home.runs ?? 0) : 0;
+  const astrosR = isHome ? homeR : awayR;
+  const oppR = isHome ? awayR : homeR;
+  const won = astrosR > oppR;
+
+  return `<div class="record-card">
+    <div class="date-col">${formatDate(dateStr)}</div>
+    <div class="matchup">
+      <span class="astros-abbr">HOU</span>
+      <span class="vs-at">${isHome ? 'vs' : '@'}</span>
+      <span class="opp">${getAbbr(oppId)}</span>
+    </div>
+    <span class="result-badge ${won ? 'win' : 'loss'}">${won ? 'W' : 'L'}</span>
+    <span class="result-score">${astrosR}-${oppR}</span>
+  </div>`;
+}
+
+// ─── Main ticker build ──────────────────────────────────────────
+
 async function buildTicker() {
   try {
-    const [yesterdayGames, astrosData] = await Promise.all([
-      fetchYesterdayScores(),
-      fetchAstrosRange()
+    const [latestGame, divStandings, wcStandings, last10] = await Promise.all([
+      fetchLatestAstrosGame(),
+      fetchDivisionStandings(),
+      fetchWildCardStandings(),
+      fetchLast10()
     ]);
 
-    // Sort yesterday's games: Astros first, then by game time
-    const astrosYesterday = yesterdayGames.filter(g => isAstrosGame(g));
-    const otherYesterday = yesterdayGames.filter(g => !isAstrosGame(g));
+    let boxscore = null;
+    if (latestGame) {
+      try { boxscore = await fetchBoxscore(latestGame.gamePk); }
+      catch (e) { console.warn('Boxscore fetch failed:', e); }
+    }
 
     let html = '';
 
-    // Section 1: Yesterday's Astros game
-    if (astrosYesterday.length > 0) {
-      html += buildSectionLabel("ASTROS YESTERDAY");
-      for (const g of astrosYesterday) {
-        html += buildGameCard(g, true);
-      }
-      html += buildDivider();
-    }
-
-    // Section 2: All yesterday's scores
-    html += buildSectionLabel("YESTERDAY'S SCORES");
-    if (yesterdayGames.length === 0) {
-      html += `<div class="record-card"><span class="time-col">No games yesterday</span></div>`;
+    // ── Section 1: Latest Astros Game ──
+    html += buildSectionLabel('LATEST GAME');
+    if (latestGame) {
+      html += buildGameDetails(latestGame, boxscore);
     } else {
-      for (const g of [...astrosYesterday, ...otherYesterday]) {
-        html += buildGameCard(g, true);
-      }
+      html += `<div class="info-chip"><span class="chip-sub">No recent games</span></div>`;
     }
     html += buildDivider();
 
-    // Section 3: Astros Last 10
-    html += buildSectionLabel("ASTROS LAST 10");
-    if (astrosData.last10.length === 0) {
-      html += `<div class="record-card"><span class="time-col">No recent games</span></div>`;
+    // ── Section 2: AL West Standings ──
+    html += buildSectionLabel('AL WEST');
+    if (divStandings.length > 0) {
+      html += buildStandingsSection(divStandings, 'div');
     } else {
-      // Calculate record
-      let wins = 0, losses = 0;
-      for (const g of astrosData.last10) {
+      html += `<div class="info-chip"><span class="chip-sub">Standings unavailable</span></div>`;
+    }
+    html += buildDivider();
+
+    // ── Section 3: AL Wild Card ──
+    html += buildSectionLabel('AL WILD CARD');
+    if (wcStandings.length > 0) {
+      // Show top ~8 teams in the WC race
+      const wcSlice = wcStandings.slice(0, 8);
+      html += buildStandingsSection(wcSlice, 'wc');
+    } else {
+      html += `<div class="info-chip"><span class="chip-sub">Wild Card unavailable</span></div>`;
+    }
+    html += buildDivider();
+
+    // ── Section 4: Last 10 Games ──
+    html += buildSectionLabel('LAST 10');
+    if (last10.length > 0) {
+      let w = 0, l = 0;
+      for (const g of last10) {
         const ls = g.linescore;
         if (!ls) continue;
-        const isHome = g.teams.home.team.id === ASTROS_ID;
-        const astrosR = isHome ? ls.teams.home.runs : ls.teams.away.runs;
-        const oppR = isHome ? ls.teams.away.runs : ls.teams.home.runs;
-        if (astrosR > oppR) wins++; else losses++;
+        const isH = g.teams.home.team.id === ASTROS_ID;
+        const aR = isH ? ls.teams.home.runs : ls.teams.away.runs;
+        const oR = isH ? ls.teams.away.runs : ls.teams.home.runs;
+        if (aR > oR) w++; else l++;
       }
-      // Show record summary
-      html += `
-        <div class="record-card" style="border-color:var(--border);background:rgba(232,180,60,0.06);">
-          <span class="astros-abbr" style="font-family:var(--font-display);font-weight:700;font-size:15px;color:var(--astros-orange);">HOU</span>
-          <span class="result-badge win" style="font-size:14px;">${wins}-${losses}</span>
-        </div>
-      `;
-      for (const g of astrosData.last10) {
-        html += buildRecordCard(g, 'past');
-      }
-    }
-    html += buildDivider();
-
-    // Section 4: Astros Next 10
-    html += buildSectionLabel("ASTROS UPCOMING");
-    if (astrosData.next10.length === 0) {
-      html += `<div class="record-card"><span class="time-col">No upcoming games</span></div>`;
+      html += `<div class="info-chip highlight">
+        <span class="astros-hl" style="font-size:16px;">HOU</span>
+        <span class="chip-value" style="color:var(--win-green);font-size:16px;">${w}-${l}</span>
+      </div>`;
+      for (const g of last10) html += buildRecordCard(g);
     } else {
-      for (const g of astrosData.next10) {
-        html += buildRecordCard(g, 'future');
-      }
+      html += `<div class="info-chip"><span class="chip-sub">No recent games</span></div>`;
     }
     html += buildDivider();
 
@@ -718,31 +855,24 @@ async function buildTicker() {
     const track = document.getElementById('scroll-track');
     track.innerHTML = html + html;
 
-    // Calculate scroll duration based on content width
     requestAnimationFrame(() => {
       const halfWidth = track.scrollWidth / 2;
       const duration = halfWidth / SCROLL_SPEED_PX_PER_SEC;
       track.style.setProperty('--scroll-duration', duration + 's');
       document.documentElement.style.setProperty('--scroll-duration', duration + 's');
 
-      // Show ticker, hide loading
       document.getElementById('loading').style.display = 'none';
       document.getElementById('ticker-wrap').style.display = 'flex';
     });
 
   } catch (err) {
     console.error('Ticker error:', err);
-    document.getElementById('loading').innerHTML = '<span style="color:var(--live-red);">Error loading scores</span>';
+    document.getElementById('loading').innerHTML = '<span style="color:var(--live-red);">Error loading data</span>';
   }
 }
 
-// Initial load
 buildTicker();
-
-// Refresh data on interval (default 5 min, configurable via ?refreshInterval=)
-setInterval(() => {
-  buildTicker();
-}, REFRESH_MIN * 60 * 1000);
+setInterval(() => { buildTicker(); }, REFRESH_MIN * 60 * 1000);
 </script>
 </body>
 </html>
